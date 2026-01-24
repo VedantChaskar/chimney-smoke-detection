@@ -1,0 +1,117 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Model Files (Large - don't commit to Git)
+*.pt
+*.pth
+*.weights
+*.onnx
+*.pb
+models/pretrained/
+models/chimney_detection/
+models/smoke_classification/
+
+# Datasets (Very Large - don't commit to Git)
+data/
+!data/.gitkeep
+!data/README.md
+
+# Training Experiments (Large - don't commit to Git)
+experiments/
+!experiments/.gitkeep
+!experiments/README.md
+
+# Output Files
+outputs/images/*.jpg
+outputs/images/*.png
+outputs/images/*.jpeg
+outputs/results/
+!outputs/images/.gitkeep
+!outputs/plots/.gitkeep
+!outputs/results/.gitkeep
+
+# Temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+*~
+
+# OS-specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Keep directory structure
+!.gitkeep
+!*/README.md
+
+# Claude Code workspace
+.claude/
+
+# Development notes and internal docs
+AUDIT_REPORT.md
+REORGANIZATION_SUMMARY.md
+nul
