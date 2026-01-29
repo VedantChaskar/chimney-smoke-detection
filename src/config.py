@@ -50,6 +50,9 @@ CHIMNEY_MODELS_DIR = MODELS_DIR / "chimney_detection"
 CHIMNEY_MODEL_YOLOV8 = CHIMNEY_MODELS_DIR / "yolov8_best.pt"
 CHIMNEY_MODEL_YOLOV12 = CHIMNEY_MODELS_DIR / "yolov12_best.pt"
 
+# YOLOv12 Experiment Checkpoint (exp1 - best performing)
+CHIMNEY_MODEL_YOLOV12_EXP1 = PROJECT_ROOT / "experiments" / "chimney_detection_yolov12" / "exp1" / "weights" / "best.pt"
+
 # Trained Smoke Classification Models
 SMOKE_MODELS_DIR = MODELS_DIR / "smoke_classification"
 SMOKE_MODEL_MOBILENET = SMOKE_MODELS_DIR / "mobilenet_best.pt"

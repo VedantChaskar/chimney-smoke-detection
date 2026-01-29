@@ -66,6 +66,13 @@ def main():
         help='Confidence threshold for smoke classification'
     )
 
+    parser.add_argument(
+        '--chimney-model',
+        type=str,
+        default='/nfs/hpc/share/chaskarv/chimney-smoke-detection/experiments/chimney_detection_yolov12/exp1/weights/best.pt',
+        help='Path to chimney detection model checkpoint (YOLOv12)'
+    )
+
     args = parser.parse_args()
 
     # Validate confidence thresholds
@@ -80,6 +87,12 @@ def main():
         print(f"Error: Image not found: {image_path}")
         sys.exit(1)
 
+    # Validate chimney model
+    chimney_model_path = Path(args.chimney_model)
+    if not chimney_model_path.exists():
+        print(f"Error: Chimney model not found: {chimney_model_path}")
+        sys.exit(1)
+
     # Set output path
     if args.output is None:
         output_path = OUTPUT_IMAGES_DIR / f"annotated_{image_path.name}"
@@ -91,12 +104,13 @@ def main():
     print("="*60)
     print(f"Input: {image_path}")
     print(f"Output: {output_path}")
+    print(f"Chimney Model: {args.chimney_model}")
     print(f"Chimney Threshold: {args.chimney_threshold}")
     print(f"Smoke Threshold: {args.smoke_threshold}")
     print("="*60)
 
-    # Initialize pipeline
-    pipeline = SmokeDetectionPipeline()
+    # Initialize pipeline with YOLOv12 chimney detector
+    pipeline = SmokeDetectionPipeline(chimney_model_path=args.chimney_model)
 
     # Update thresholds if specified
     if args.chimney_threshold != 0.15:
