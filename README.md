@@ -45,10 +45,14 @@ chimney-smoke-detection/
 │   └── utils/                # Utility functions
 │
 ├── scripts/                  # Executable scripts
-│   ├── run_inference.py      # Single image inference
-│   ├── run_batch_inference.py # Batch processing
-│   ├── extract_chimneys.py   # Extract chimney crops
-│   └── test_gpu.py           # Test GPU availability
+│   ├── infer_smoke_pipeline.py    # Full 2-stage pipeline
+│   ├── infer_yolov12_chimney.py   # YOLOv12 chimney detection
+│   ├── infer_sam3_chimney.py      # SAM3 chimney detection
+│   ├── infer_batch_images.py      # Batch process images
+│   ├── crop_chimney_regions.py    # Extract chimney crops
+│   ├── util_cleanup_models.py     # Cleanup utility
+│   ├── util_check_gpu.py          # GPU check utility
+│   └── setup_sam3_env.sh          # SAM3 environment setup
 │
 ├── data/                     # Datasets (gitignored)
 │   ├── chimney_detection/    # YOLO datasets (v1, v3, v4, v6)
@@ -182,17 +186,17 @@ $env:YOLO_HOME="C:\path\to\custom\cache"
 
 ### Test GPU Availability
 ```bash
-python scripts/test_gpu.py
+python scripts/util_check_gpu.py
 ```
 
 ### Run Inference on a Single Image
 ```bash
-python scripts/run_inference.py assets/test_image.jpg
+python scripts/infer_smoke_pipeline.py assets/test_image.jpg
 ```
 
 ### Batch Process Multiple Images
 ```bash
-python scripts/run_batch_inference.py path/to/images/ outputs/results/
+python scripts/infer_batch_images.py path/to/images/ outputs/results/
 ```
 
 ## Training
@@ -268,13 +272,13 @@ print(f"Chimney location: {result['chimney_bbox']}")
 
 ```bash
 # Single image inference
-python scripts/run_inference.py image.jpg --output result.jpg
+python scripts/infer_smoke_pipeline.py image.jpg --output result.jpg
 
 # Batch processing
-python scripts/run_batch_inference.py input_folder/ output_folder/
+python scripts/infer_batch_images.py input_folder/ output_folder/
 
 # Extract chimney crops from images
-python scripts/extract_chimneys.py image.jpg --output chimney_crop.jpg
+python scripts/crop_chimney_regions.py image.jpg --output chimney_crop.jpg
 ```
 
 ## Configuration

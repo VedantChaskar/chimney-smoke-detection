@@ -6,16 +6,16 @@ with the trained checkpoint from experiments/chimney_detection_yolov12/exp1/weig
 
 Usage:
     # Single image
-    python scripts/run_inference_yolov12.py path/to/image.jpg
+    python scripts/infer_yolov12_chimney.py path/to/image.jpg
 
     # With custom output path
-    python scripts/run_inference_yolov12.py path/to/image.jpg --output result.jpg
+    python scripts/infer_yolov12_chimney.py path/to/image.jpg --output result.jpg
 
     # Batch processing
-    python scripts/run_inference_yolov12.py path/to/images/ --batch --output-dir results/
+    python scripts/infer_yolov12_chimney.py path/to/images/ --batch --output-dir results/
 
     # Detection only (no smoke classification)
-    python scripts/run_inference_yolov12.py path/to/image.jpg --detection-only
+    python scripts/infer_yolov12_chimney.py path/to/image.jpg --detection-only
 """
 
 import argparse
@@ -34,6 +34,7 @@ from src.config import (
     SMOKE_MODEL_MOBILENET,
     ensure_dir
 )
+from src.utils.tee_logger import TeeLogger
 
 # YOLOv12 checkpoint path
 YOLOV12_CHECKPOINT = EXPERIMENTS_DIR / "chimney_detection_yolov12" / "exp1" / "weights" / "best.pt"
@@ -295,4 +296,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    with TeeLogger("inference", "infer_yolov12_chimney"):
+        main()

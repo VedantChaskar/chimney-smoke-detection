@@ -88,12 +88,19 @@ outputs/results/
 !outputs/plots/.gitkeep
 !outputs/results/.gitkeep
 
+# Log Files
+logs/
+!logs/.gitkeep
+
 # Temporary files
 *.log
 *.tmp
 *.swp
 *.swo
 *~
+
+# Pip version lock artifacts
+=*
 
 # OS-specific
 .DS_Store

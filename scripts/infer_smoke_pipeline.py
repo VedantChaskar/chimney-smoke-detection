@@ -4,9 +4,9 @@ Single Image Inference Script
 Quick command-line tool for running smoke detection on a single image.
 
 Usage:
-    python scripts/run_inference.py path/to/image.jpg
-    python scripts/run_inference.py path/to/image.jpg --output result.jpg
-    python scripts/run_inference.py path/to/image.jpg --no-visualize
+    python scripts/infer_smoke_pipeline.py path/to/image.jpg
+    python scripts/infer_smoke_pipeline.py path/to/image.jpg --output result.jpg
+    python scripts/infer_smoke_pipeline.py path/to/image.jpg --no-visualize
 """
 
 import argparse
@@ -18,7 +18,8 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.inference.pipeline import SmokeDetectionPipeline
-from src.config import OUTPUT_IMAGES_DIR
+from src.config import OUTPUT_IMAGES_DIR, CHIMNEY_MODEL_YOLOV12_EXP1
+from src.utils.tee_logger import TeeLogger
 
 
 def main():
@@ -69,7 +70,7 @@ def main():
     parser.add_argument(
         '--chimney-model',
         type=str,
-        default='/nfs/hpc/share/chaskarv/chimney-smoke-detection/experiments/chimney_detection_yolov12/exp1/weights/best.pt',
+        default=str(CHIMNEY_MODEL_YOLOV12_EXP1),
         help='Path to chimney detection model checkpoint (YOLOv12)'
     )
 
@@ -156,4 +157,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    with TeeLogger("inference", "infer_smoke_pipeline"):
+        main()

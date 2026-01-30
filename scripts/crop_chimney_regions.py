@@ -4,8 +4,8 @@ Extract Chimney Crops Script
 Extract chimney regions from images using a trained detector.
 
 Usage:
-    python scripts/extract_chimneys.py input_folder/ output_folder/
-    python scripts/extract_chimneys.py Dataset/ chimney_crops/ --conf 0.5
+    python scripts/crop_chimney_regions.py input_folder/ output_folder/
+    python scripts/crop_chimney_regions.py Dataset/ chimney_crops/ --conf 0.5
 """
 
 import argparse

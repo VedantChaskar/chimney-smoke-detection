@@ -27,6 +27,7 @@ from ..config import (
     ensure_dir,
     OUTPUT_PLOTS_DIR
 )
+from ..utils.tee_logger import TeeLogger
 from .training_utils import train_epoch, validate, save_checkpoint, EarlyStopping
 
 
@@ -281,9 +282,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train_mobilenet_classifier(
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        learning_rate=args.lr,
-        early_stopping_patience=args.patience
-    )
+    with TeeLogger("training", "train_smoke_mobilenet"):
+        train_mobilenet_classifier(
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            learning_rate=args.lr,
+            early_stopping_patience=args.patience
+        )

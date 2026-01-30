@@ -4,9 +4,9 @@ Batch Inference Script
 Process multiple images in a directory for smoke detection.
 
 Usage:
-    python scripts/run_batch_inference.py input_folder/
-    python scripts/run_batch_inference.py input_folder/ output_folder/
-    python scripts/run_batch_inference.py input_folder/ output_folder/ --chimney-threshold 0.2
+    python scripts/infer_batch_images.py input_folder/
+    python scripts/infer_batch_images.py input_folder/ output_folder/
+    python scripts/infer_batch_images.py input_folder/ output_folder/ --chimney-threshold 0.2
 """
 
 import argparse

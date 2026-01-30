@@ -20,11 +20,14 @@ from ..config import (
     YOLOV8_PRETRAINED,
     YOLO11_PRETRAINED,
     YOLO12_PRETRAINED,
+    YOLO26_PRETRAINED,
     CHIMNEY_YOLOV8_EXPERIMENTS,
     CHIMNEY_YOLOV12_EXPERIMENTS,
+    CHIMNEY_YOLO26_EXPERIMENTS,
     ChimneyDetectionConfig,
     DEVICE
 )
+from ..utils.tee_logger import TeeLogger
 
 
 def train_chimney_detector(
@@ -80,6 +83,9 @@ def train_chimney_detector(
     elif model_type == 'yolo12':
         pretrained_model = YOLO12_PRETRAINED
         project_dir = CHIMNEY_YOLOV12_EXPERIMENTS
+    elif model_type == 'yolo26':
+        pretrained_model = YOLO26_PRETRAINED
+        project_dir = CHIMNEY_YOLO26_EXPERIMENTS
     else:
         raise ValueError(f"Unknown model type: {model_type}")
 
@@ -179,7 +185,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '--model',
         type=str,
-        choices=['yolov8', 'yolo11', 'yolo12'],
+        choices=['yolov8', 'yolo11', 'yolo12', 'yolo26'],
         default='yolov8',
         help='YOLO model type'
     )
@@ -235,13 +241,14 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    train_chimney_detector(
-        model_type=args.model,
-        dataset_version=args.dataset,
-        epochs=args.epochs,
-        img_size=args.img_size,
-        batch_size=args.batch_size,
-        patience=args.patience,
-        experiment_name=args.name,
-        resume=args.resume
-    )
+    with TeeLogger("training", "train_chimney_detector"):
+        train_chimney_detector(
+            model_type=args.model,
+            dataset_version=args.dataset,
+            epochs=args.epochs,
+            img_size=args.img_size,
+            batch_size=args.batch_size,
+            patience=args.patience,
+            experiment_name=args.name,
+            resume=args.resume
+        )

@@ -5,7 +5,7 @@ This utility helps clean up YOLO model files (.pt) that may have been
 cached to the project root directory by the Ultralytics library.
 
 Usage:
-    python scripts/cleanup_stray_models.py
+    python scripts/util_cleanup_models.py
 """
 
 import sys

@@ -1,4 +1,4 @@
-# test_gpu.py
+# util_check_gpu.py - Check GPU availability for training/inference
 import torch
 
 print(f"PyTorch version: {torch.__version__}")

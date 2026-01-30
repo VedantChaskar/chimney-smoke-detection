@@ -44,14 +44,20 @@ PRETRAINED_DIR = MODELS_DIR / "pretrained"
 YOLOV8_PRETRAINED = PRETRAINED_DIR / "yolov8n.pt"
 YOLO11_PRETRAINED = PRETRAINED_DIR / "yolo11n.pt"
 YOLO12_PRETRAINED = PRETRAINED_DIR / "yolo12n.pt"
+YOLO26_PRETRAINED = PRETRAINED_DIR / "yolo26n.pt"
 
 # Trained Chimney Detection Models
 CHIMNEY_MODELS_DIR = MODELS_DIR / "chimney_detection"
 CHIMNEY_MODEL_YOLOV8 = CHIMNEY_MODELS_DIR / "yolov8_best.pt"
 CHIMNEY_MODEL_YOLOV12 = CHIMNEY_MODELS_DIR / "yolov12_best.pt"
+CHIMNEY_MODEL_YOLO26 = CHIMNEY_MODELS_DIR / "yolo26_best.pt"
 
 # YOLOv12 Experiment Checkpoint (exp1 - best performing)
 CHIMNEY_MODEL_YOLOV12_EXP1 = PROJECT_ROOT / "experiments" / "chimney_detection_yolov12" / "exp1" / "weights" / "best.pt"
+
+# SAM3 Model Path (downloads from HuggingFace by default)
+SAM3_ROOT = PROJECT_ROOT / "sam3"
+SAM3_CHECKPOINT = None  # None means download from HuggingFace
 
 # Trained Smoke Classification Models
 SMOKE_MODELS_DIR = MODELS_DIR / "smoke_classification"
@@ -82,6 +88,7 @@ def get_pretrained_model_path(model_name: str) -> Path:
     model_map = {
         'yolo11': YOLO11_PRETRAINED,
         'yolo12': YOLO12_PRETRAINED,
+        'yolo26': YOLO26_PRETRAINED,
         'yolov8': YOLOV8_PRETRAINED,
     }
 
@@ -105,11 +112,17 @@ OUTPUT_PLOTS_DIR = OUTPUT_DIR / "plots"
 OUTPUT_RESULTS_DIR = OUTPUT_DIR / "results"
 
 # ============================================================================
+# LOG DIRECTORIES
+# ============================================================================
+LOGS_DIR = PROJECT_ROOT / "logs"
+
+# ============================================================================
 # EXPERIMENT DIRECTORIES
 # ============================================================================
 EXPERIMENTS_DIR = PROJECT_ROOT / "experiments"
 CHIMNEY_YOLOV8_EXPERIMENTS = EXPERIMENTS_DIR / "chimney_detection_yolov8"
 CHIMNEY_YOLOV12_EXPERIMENTS = EXPERIMENTS_DIR / "chimney_detection_yolov12"
+CHIMNEY_YOLO26_EXPERIMENTS = EXPERIMENTS_DIR / "chimney_detection_yolo26"
 SMOKE_EXPERIMENTS = EXPERIMENTS_DIR / "smoke_classification"
 
 # ============================================================================
@@ -151,6 +164,17 @@ class SmokeClassificationConfig:
 
     # Model paths
     EXPERIMENT_DIR = SMOKE_EXPERIMENTS
+
+
+class SAM3DetectionConfig:
+    """Configuration for SAM3 chimney detection (inference)"""
+    IMG_SIZE = 1008  # SAM3 uses 1008x1008 resolution
+    CONF_THRESHOLD = 0.3  # Higher default for SAM3
+    TEXT_PROMPT = "chimney"  # Default text prompt
+
+    # Model settings
+    LOAD_FROM_HF = True  # Download from HuggingFace
+    CHECKPOINT = SAM3_CHECKPOINT
 
 
 class InferencePipelineConfig:
