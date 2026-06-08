@@ -1,9 +1,10 @@
 """
-Two-Stage Smoke Detection Pipeline
+Multi-Stage Smoke Detection Pipeline
 
 This module implements the complete inference pipeline combining:
     Stage 1: Chimney detection using YOLO
-    Stage 2: Smoke classification using CNN
+    Stage 2: Smoke classification using CNN (binary: smoke/no smoke)
+    Stage 3: Ringlemann scale classification (optional: R0-R5 density rating)
 
 The pipeline can process single images or batches with configurable thresholds.
 """
@@ -18,15 +19,17 @@ import matplotlib.pyplot as plt
 
 from .chimney_detector import ChimneyDetector
 from .smoke_classifier import SmokeClassifier
+from .ringlemann_classifier import RinglemannClassifier
 from ..config import InferencePipelineConfig, ensure_dir
 
 
 class SmokeDetectionPipeline:
     """
-    Complete two-stage pipeline for smoke detection
+    Complete multi-stage pipeline for smoke detection
 
     Stage 1: Detect chimneys in images using YOLO
-    Stage 2: Classify smoke presence in detected chimney regions
+    Stage 2: Classify smoke presence in detected chimney regions (binary)
+    Stage 3: (Optional) Classify smoke density on Ringlemann scale (R0-R5)
     """
 
     def __init__(
@@ -34,6 +37,8 @@ class SmokeDetectionPipeline:
         config: InferencePipelineConfig = None,
         chimney_model_path: Union[str, Path] = None,
         smoke_model_path: Union[str, Path] = None,
+        ringlemann_model_path: Union[str, Path] = None,
+        ringlemann_model_type: str = 'mobilenet',
         device: str = None
     ):
         """
@@ -43,9 +48,12 @@ class SmokeDetectionPipeline:
             config: Configuration object with pipeline settings
             chimney_model_path: Path to chimney detector model (overrides config)
             smoke_model_path: Path to smoke classifier model (overrides config)
+            ringlemann_model_path: Path to Ringlemann classifier model (optional)
+            ringlemann_model_type: Type of Ringlemann model ('mobilenet', 'resnet18', etc.)
             device: Device to run models on (overrides config)
         """
         self.config = config or InferencePipelineConfig
+        self.device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         # Initialize Stage 1: Chimney Detector
         chimney_path = chimney_model_path or self.config.CHIMNEY_MODEL
@@ -55,19 +63,35 @@ class SmokeDetectionPipeline:
             img_size=self.config.CHIMNEY_IMG_SIZE
         )
 
-        # Initialize Stage 2: Smoke Classifier
+        # Initialize Stage 2: Smoke Classifier (binary)
         smoke_path = smoke_model_path or self.config.SMOKE_MODEL
-        device = device or torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.smoke_classifier = SmokeClassifier(
             model_path=smoke_path,
             conf_threshold=self.config.SMOKE_CONF_THRESHOLD,
-            device=device
+            device=self.device
         )
 
-        print(f"✓ Pipeline initialized successfully")
+        # Initialize Stage 3: Ringlemann Classifier (optional)
+        self.ringlemann_classifier = None
+        if ringlemann_model_path is not None:
+            ringlemann_path = Path(ringlemann_model_path)
+            if ringlemann_path.exists():
+                self.ringlemann_classifier = RinglemannClassifier(
+                    model_path=ringlemann_path,
+                    model_type=ringlemann_model_type,
+                    device=self.device
+                )
+            else:
+                print(f"  \u26a0 Ringlemann model not found: {ringlemann_path}")
+
+        print(f"\u2713 Pipeline initialized successfully")
         print(f"  Chimney Detector: {chimney_path}")
         print(f"  Smoke Classifier: {smoke_path}")
-        print(f"  Device: {device}")
+        if self.ringlemann_classifier:
+            print(f"  Ringlemann Classifier: {ringlemann_model_path} ({ringlemann_model_type})")
+        else:
+            print(f"  Ringlemann Classifier: Not configured (Stage 3 disabled)")
+        print(f"  Device: {self.device}")
 
     def process_image(
         self,
@@ -109,33 +133,47 @@ class SmokeDetectionPipeline:
         results = []
 
         if not detections:
-            print("  ⚠ No chimney detected")
+            print("  \u26a0 No chimney detected")
 
             if use_fallback:
-                print("  → Fallback: Classifying entire image")
+                print("  \u2192 Fallback: Classifying entire image")
                 smoke_result = self.smoke_classifier.classify(image)
 
                 print(f"  Result: {smoke_result['prediction']} "
                       f"(confidence: {smoke_result['confidence']:.3f})")
 
-                results.append({
+                result_dict = {
                     'chimney_bbox': None,
                     'chimney_confidence': None,
                     'smoke_result': smoke_result,
+                    'ringlemann_result': None,
                     'used_fallback': True
-                })
+                }
+
+                # Stage 3: Ringlemann classification if smoke detected
+                if (smoke_result['prediction'] == 'smoke' and
+                    self.ringlemann_classifier is not None):
+                    print("  Stage 3: Classifying Ringlemann rating...")
+                    ringlemann_result = self.ringlemann_classifier.classify(image)
+                    result_dict['ringlemann_result'] = ringlemann_result
+                    print(f"  Ringlemann: {ringlemann_result['ringlemann_class']} "
+                          f"(confidence: {ringlemann_result['confidence']:.3f})")
+
+                results.append(result_dict)
 
                 # Annotate image
                 color = (0, 255, 0) if smoke_result['prediction'] == 'no_smoke' else (0, 0, 255)
                 label = f"Full Image: {smoke_result['prediction']} ({smoke_result['confidence']:.2f})"
+                if result_dict['ringlemann_result']:
+                    label += f" | {result_dict['ringlemann_result']['ringlemann_class']}"
                 cv2.putText(image_cv, label, (10, 30),
                            cv2.FONT_HERSHEY_SIMPLEX, 1.0, color, 2)
             else:
-                print("  ✗ No fallback enabled")
+                print("  \u2717 No fallback enabled")
                 return []
 
         else:
-            print(f"  ✓ Found {len(detections)} chimney(s)")
+            print(f"  \u2713 Found {len(detections)} chimney(s)")
 
             for i, detection in enumerate(detections, 1):
                 bbox = detection['bbox']
@@ -145,19 +183,41 @@ class SmokeDetectionPipeline:
                 print(f"    BBox: {bbox}")
                 print(f"    Confidence: {chimney_conf:.3f}")
 
-                # Stage 2: Classify smoke
+                # Stage 2: Classify smoke (binary)
                 print(f"    Stage 2: Classifying smoke...")
-                smoke_result = self.smoke_classifier.classify(image, bbox)
+                smoke_result = self.smoke_classifier.classify(
+                    image, bbox,
+                    top_scale=self.config.CROP_PAD_TOP_SCALE,
+                    bottom_scale=self.config.CROP_PAD_BOTTOM_SCALE,
+                    side_scale=self.config.CROP_PAD_SIDE_SCALE
+                )
 
                 print(f"    Result: {smoke_result['prediction']} "
                       f"(confidence: {smoke_result['confidence']:.3f})")
 
-                results.append({
+                result_dict = {
                     'chimney_bbox': bbox,
                     'chimney_confidence': chimney_conf,
                     'smoke_result': smoke_result,
+                    'ringlemann_result': None,
                     'used_fallback': False
-                })
+                }
+
+                # Stage 3: Ringlemann classification if smoke detected
+                if (smoke_result['prediction'] == 'smoke' and
+                    self.ringlemann_classifier is not None):
+                    print(f"    Stage 3: Classifying Ringlemann rating...")
+                    ringlemann_result = self.ringlemann_classifier.classify(
+                        image, bbox,
+                        top_scale=self.config.CROP_PAD_TOP_SCALE,
+                        bottom_scale=self.config.CROP_PAD_BOTTOM_SCALE,
+                        side_scale=self.config.CROP_PAD_SIDE_SCALE
+                    )
+                    result_dict['ringlemann_result'] = ringlemann_result
+                    print(f"    Ringlemann: {ringlemann_result['ringlemann_class']} "
+                          f"(confidence: {ringlemann_result['confidence']:.3f})")
+
+                results.append(result_dict)
 
                 # Annotate image
                 x1, y1, x2, y2 = bbox
@@ -167,6 +227,11 @@ class SmokeDetectionPipeline:
 
                 label1 = f"Chimney: {chimney_conf:.2f}"
                 label2 = f"{smoke_result['prediction']}: {smoke_result['confidence']:.2f}"
+
+                # Add Ringlemann rating to label if available
+                if result_dict['ringlemann_result']:
+                    r_result = result_dict['ringlemann_result']
+                    label2 += f" | {r_result['ringlemann_class']}: {r_result['confidence']:.2f}"
 
                 cv2.putText(image_cv, label1, (x1, y1 - 30),
                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
@@ -264,6 +329,7 @@ class SmokeDetectionPipeline:
         smoke_count = 0
         no_smoke_count = 0
         failed_count = 0
+        ringlemann_counts = {f'R{i}': 0 for i in range(6)}
 
         for img_name, img_results in results.items():
             if not img_results:
@@ -276,7 +342,17 @@ class SmokeDetectionPipeline:
                 smoke = r['smoke_result']['prediction']
                 conf = r['smoke_result']['confidence']
 
-                print(f"{img_name}: {status} -> {smoke.upper()} ({conf:.2f})")
+                # Build result string
+                result_str = f"{img_name}: {status} -> {smoke.upper()} ({conf:.2f})"
+
+                # Add Ringlemann rating if available
+                if r.get('ringlemann_result'):
+                    r_class = r['ringlemann_result']['ringlemann_class']
+                    r_conf = r['ringlemann_result']['confidence']
+                    result_str += f" | {r_class} ({r_conf:.2f})"
+                    ringlemann_counts[r_class] += 1
+
+                print(result_str)
 
                 if smoke == 'smoke':
                     smoke_count += 1
@@ -286,14 +362,26 @@ class SmokeDetectionPipeline:
         print(f"\n{'='*60}")
         print(f"Total: {len(results)} images")
         print(f"Smoke: {smoke_count} | No Smoke: {no_smoke_count} | Failed: {failed_count}")
+
+        # Print Ringlemann distribution if any were classified
+        if any(ringlemann_counts.values()):
+            ringlemann_str = " | ".join(f"{k}: {v}" for k, v in ringlemann_counts.items() if v > 0)
+            print(f"Ringlemann Distribution: {ringlemann_str}")
+
         print(f"{'='*60}")
 
 
 if __name__ == '__main__':
     # Test the pipeline
-    from ..config import PROJECT_ROOT
+    from ..config import PROJECT_ROOT, RINGLEMANN_MODEL_MOBILENET
 
-    pipeline = SmokeDetectionPipeline()
+    # Initialize pipeline with optional Ringlemann classifier
+    ringlemann_path = RINGLEMANN_MODEL_MOBILENET if RINGLEMANN_MODEL_MOBILENET.exists() else None
+
+    pipeline = SmokeDetectionPipeline(
+        ringlemann_model_path=ringlemann_path,
+        ringlemann_model_type='mobilenet'
+    )
 
     # Test with a sample image
     test_image = PROJECT_ROOT / "assets" / "test_image.jpg"
@@ -312,5 +400,10 @@ if __name__ == '__main__':
             print(f"\nDetection {i}:")
             print(f"  Smoke: {result['smoke_result']['prediction'].upper()}")
             print(f"  Confidence: {result['smoke_result']['confidence']:.1%}")
+
+            if result.get('ringlemann_result'):
+                r = result['ringlemann_result']
+                print(f"  Ringlemann Rating: {r['ringlemann_class']}")
+                print(f"  Ringlemann Confidence: {r['confidence']:.1%}")
     else:
         print(f"Test image not found: {test_image}")

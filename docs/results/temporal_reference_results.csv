@@ -1,0 +1,12 @@
+filename,smoke_type,opacity_pct,ringelman,formula_used,alignment_success,num_alignment_matches,reason
+IMG_0826.JPG,light,48.22,2,formula_2_light_smoke,True,1137,OK
+IMG_0827.JPG,light,100.0,5,formula_2_light_smoke,True,1445,OK
+IMG_0829.JPG,light,51.25,3,formula_2_light_smoke,True,1174,OK
+IMG_0869.JPG,light,32.64,2,formula_2_light_smoke,True,1695,OK
+IMG_0872.JPG,light,62.74,3,formula_2_light_smoke,True,1810,OK
+IMG_0874.JPG,light,96.42,5,formula_2_light_smoke,True,178,OK
+IMG_0885.JPG,light,47.25,2,formula_2_light_smoke,True,1551,OK
+IMG_0890.JPG,light,39.52,2,formula_2_light_smoke,True,1877,OK
+IMG_0894.JPG,light,34.89,2,formula_2_light_smoke,True,1967,OK
+IMG_0899.JPG,light,51.75,3,formula_2_light_smoke,True,1818,OK
+IMG_0900.JPG,light,43.38,2,formula_2_light_smoke,True,1523,OK

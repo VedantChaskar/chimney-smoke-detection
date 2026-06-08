@@ -1,0 +1,11 @@
+# Install after requirements.txt:
+# pip install -r requirements-dev.txt
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Jupyter exploration
+jupyter>=1.0.0
+ipykernel>=6.25.0
+notebook>=7.0.0

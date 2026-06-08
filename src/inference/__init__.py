@@ -2,6 +2,7 @@
 
 from .chimney_detector import ChimneyDetector
 from .smoke_classifier import SmokeClassifier
+from .ringlemann_classifier import RinglemannClassifier
 from .pipeline import SmokeDetectionPipeline
 
 # SAM3 detector - import only when needed to avoid dependency issues
@@ -13,6 +14,7 @@ def get_sam3_detector(*args, **kwargs):
 __all__ = [
     'ChimneyDetector',
     'SmokeClassifier',
+    'RinglemannClassifier',
     'SmokeDetectionPipeline',
     'get_sam3_detector'
 ]

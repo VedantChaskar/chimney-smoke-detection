@@ -122,3 +122,50 @@ Thumbs.db
 AUDIT_REPORT.md
 REORGANIZATION_SUMMARY.md
 nul
+
+# ── Capstone artifacts (kept locally, never push) ────────────────────────────
+_capstone/
+scripts/build_presentation.py
+presentation_script.md
+presentation_slides.md
+running smokescreen.md
+
+# ── Large binary files ────────────────────────────────────────────────────────
+*.pptx
+*.pdf
+!docs/*.pdf
+
+# ── Model directories not yet covered ────────────────────────────────────────
+models/ringlemann_classification/
+models/ringlemann_binary/
+models/sam3/
+models/vitmatte_cache/
+
+# ── Output subdirectories ─────────────────────────────────────────────────────
+outputs/chimney_crops/
+outputs/after/
+outputs/vitmatte/
+outputs/smoke_opacity/
+outputs/smokescreen/
+outputs/plots/
+
+# ── Subproject outputs ────────────────────────────────────────────────────────
+physics_methods/temporal_reference/outputs/
+physics_methods/gemini_inpainting/outputs/
+physics_methods/smokescreen/outputs/
+physics_methods/smoke_opacity/outputs/
+physics_methods/vitmatte/outputs/
+
+# ── Smokescreen generated data ────────────────────────────────────────────────
+smokescreen/data/raw/
+smokescreen/data/results/
+
+# ── Subproject test data (large image sets) ───────────────────────────────────
+# temporal_reference/Method_1_test/ is kept (small demo set for the pipeline)
+
+# ── Nested pytest caches ─────────────────────────────────────────────────────
+**/.pytest_cache/
+
+# ── Root-level working documents (content moved to docs/) ────────────────────
+report_context.md
+_test_write

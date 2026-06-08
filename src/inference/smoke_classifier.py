@@ -127,7 +127,9 @@ class SmokeClassifier:
         self,
         image: Union[Image.Image, np.ndarray, str, Path],
         bbox: Optional[Tuple[int, int, int, int]] = None,
-        padding: int = 20
+        top_scale: float = 1.5,
+        bottom_scale: float = 0.2,
+        side_scale: float = 0.3
     ) -> Dict:
         """
         Classify smoke presence in an image or image region
@@ -135,7 +137,9 @@ class SmokeClassifier:
         Args:
             image: PIL Image, numpy array, or path to image
             bbox: Optional (x1, y1, x2, y2) bounding box to crop
-            padding: Padding to add around bbox in pixels
+            top_scale: Proportional padding above bbox (fraction of box height)
+            bottom_scale: Proportional padding below bbox (fraction of box height)
+            side_scale: Proportional padding on left/right (fraction of box width)
 
         Returns:
             Dictionary with prediction, confidence, and probabilities
@@ -149,7 +153,7 @@ class SmokeClassifier:
 
         # Crop to bbox if provided
         if bbox is not None:
-            image = self._crop_with_padding(image, bbox, padding)
+            image = self._crop_with_padding(image, bbox, top_scale, bottom_scale, side_scale)
 
         # Transform and classify
         img_tensor = self.transform(image).unsqueeze(0).to(self.device)
@@ -173,27 +177,36 @@ class SmokeClassifier:
         self,
         image: Image.Image,
         bbox: Tuple[int, int, int, int],
-        padding: int
+        top_scale: float,
+        bottom_scale: float,
+        side_scale: float
     ) -> Image.Image:
         """
-        Crop image to bounding box with padding
+        Crop image to bounding box with asymmetric proportional padding
 
         Args:
             image: PIL Image
             bbox: (x1, y1, x2, y2) bounding box
-            padding: Padding in pixels
+            top_scale: Proportional padding above bbox (fraction of box height)
+            bottom_scale: Proportional padding below bbox (fraction of box height)
+            side_scale: Proportional padding on left/right (fraction of box width)
 
         Returns:
             Cropped PIL Image
         """
         x1, y1, x2, y2 = bbox
         img_w, img_h = image.size
+        box_h = y2 - y1
+        box_w = x2 - x1
 
-        # Add padding
-        x1 = max(0, x1 - padding)
-        y1 = max(0, y1 - padding)
-        x2 = min(img_w, x2 + padding)
-        y2 = min(img_h, y2 + padding)
+        pad_top = int(box_h * top_scale)
+        pad_bottom = int(box_h * bottom_scale)
+        pad_sides = int(box_w * side_scale)
+
+        x1 = max(0, x1 - pad_sides)
+        y1 = max(0, y1 - pad_top)
+        x2 = min(img_w, x2 + pad_sides)
+        y2 = min(img_h, y2 + pad_bottom)
 
         return image.crop((x1, y1, x2, y2))
 
