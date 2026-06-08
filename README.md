@@ -48,7 +48,7 @@ Alternative opacity pipelines (no training required):
 ## Installation
 
 ```bash
-git clone https://github.com/<your-username>/chimney-smoke-detection.git
+git clone https://github.com/VedantChaskar/chimney-smoke-detection.git
 cd chimney-smoke-detection
 
 # Create and activate the conda environment
