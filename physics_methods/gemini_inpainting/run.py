@@ -7,7 +7,6 @@ Usage
     python run.py --input /path/to/folder      # custom input folder
     python run.py --input /path/to/image.jpg   # single image accepted directly
     python run.py --alpha 94        # custom calibration constant
-    python run.py --skip-2b         # pixel mask only (saves one Gemini call/image)
     python run.py --no-sam          # force HSV fallback (no SAM3 / no GPU)
 
 Requires
@@ -26,9 +25,9 @@ No ground truth image needed — Gemini generates it synthetically.
 
 Outputs
 -------
-    outputs/masks/        — binary masks (pixel + bbox) for each image
+    outputs/masks/        — binary pixel masks for each image
     outputs/inpainted/    — Gemini inpainted results
-    outputs/annotated/    — 3-panel comparison images
+    outputs/annotated/    — 2-panel comparison images
     outputs/results.csv   — per-image results table
 """
 
@@ -47,7 +46,7 @@ import config as cfg
 from src.sam3_loader     import SAM3Segmenter
 from src.segmenter       import segment_image
 from src.smoke_validator import validate_smoke
-from src.mask_generator  import generate_pixel_mask, generate_bbox_mask
+from src.mask_generator  import generate_pixel_mask
 from src.inpainter       import inpaint_smoke
 from src.opacity         import compute_opacity
 from src.annotator       import save_annotated
@@ -59,8 +58,6 @@ _EMPTY = {"opacity_pct": None, "ringelman": None, "formula_used": "none", "reaso
 def main() -> None:
     parser = argparse.ArgumentParser(description="Method 2 — Synthetic Ground Truth")
     parser.add_argument("--alpha",   type=float, default=cfg.ALPHA_DEFAULT)
-    parser.add_argument("--skip-2b", action="store_true",
-                        help="Skip bounding-box method — only run pixel mask (2a)")
     parser.add_argument("--no-sam",         action="store_true",
                         help="Force HSV fallback; skip SAM3 model loading")
     parser.add_argument("--local-fallback", action="store_true",
@@ -129,67 +126,45 @@ def main() -> None:
         if not validation["smoke_present"]:
             no_smoke = {"opacity_pct": 0.0, "ringelman": 0,
                         "formula_used": "none", "reason": validation["reason"]}
-            log(str(img_path), validation, no_smoke, no_smoke, False, False)
+            log(str(img_path), validation, no_smoke, False)
             continue
 
         smoke_mask = validation["smoke_mask"]
         smoke_type = validation["smoke_type"]
 
-        # Step 3: Generate masks
+        # Step 3: Generate pixel mask
         pixel_mask = generate_pixel_mask(smoke_mask, image.shape)
-        bbox_mask  = generate_bbox_mask(smoke_mask,  image.shape)
-
         cv2.imwrite(os.path.join(cfg.MASKS_DIR, f"{stem}_mask_pixel.png"), pixel_mask)
-        cv2.imwrite(os.path.join(cfg.MASKS_DIR, f"{stem}_mask_bbox.png"),  bbox_mask)
 
-        # Step 4a: Inpaint with pixel mask
+        # Step 4: Inpaint with pixel mask
         method = "OpenCV fallback" if args.local_fallback else "Gemini"
-        print(f"[2a] {method} inpainting (pixel mask)...")
-        inpainted_pixel = inpaint_smoke(image, pixel_mask, "pixel",
+        print(f"[Inpaint] {method} inpainting (pixel mask)...")
+        inpainted_pixel = inpaint_smoke(image, pixel_mask,
                                         use_local_fallback=args.local_fallback)
-        inpaint_ok_2a   = inpainted_pixel is not None
+        inpaint_ok = inpainted_pixel is not None
         if inpainted_pixel is not None:
             cv2.imwrite(os.path.join(cfg.INPAINTED_DIR, f"{stem}_inpainted_pixel.jpg"),
                         inpainted_pixel)
 
-        # Step 4b: Inpaint with bbox mask
-        inpainted_bbox = None
-        inpaint_ok_2b  = False
-        if not args.skip_2b:
-            print(f"[2b] {method} inpainting (bbox mask)...")
-            inpainted_bbox = inpaint_smoke(image, bbox_mask, "bbox",
-                                           use_local_fallback=args.local_fallback)
-            inpaint_ok_2b  = inpainted_bbox is not None
-            if inpainted_bbox is not None:
-                cv2.imwrite(os.path.join(cfg.INPAINTED_DIR, f"{stem}_inpainted_bbox.jpg"),
-                            inpainted_bbox)
-
         # Step 5: Opacity
-        result_2a = _EMPTY.copy()
-        result_2b = _EMPTY.copy()
-
+        result = _EMPTY.copy()
         if inpainted_pixel is not None:
-            result_2a = compute_opacity(image, inpainted_pixel, smoke_mask,
-                                        best_regions, smoke_type, alpha=args.alpha)
-        if inpainted_bbox is not None:
-            result_2b = compute_opacity(image, inpainted_bbox, smoke_mask,
-                                        best_regions, smoke_type, alpha=args.alpha)
+            result = compute_opacity(image, inpainted_pixel, smoke_mask,
+                                     best_regions, smoke_type, alpha=args.alpha)
 
-        print(f"[2a] Opacity={result_2a['opacity_pct']}  Ringelman={result_2a['ringelman']}")
-        print(f"[2b] Opacity={result_2b['opacity_pct']}  Ringelman={result_2b['ringelman']}")
+        print(f"[Result] Opacity={result['opacity_pct']}  Ringelman={result['ringelman']}")
 
         # Step 6: Annotate
         save_annotated(
             image,
             inpainted_pixel,
-            inpainted_bbox,
-            smoke_mask, result_2a, result_2b,
-            pixel_mask, bbox_mask,
+            smoke_mask, result,
+            pixel_mask,
             os.path.join(cfg.ANNOTATED_DIR, f"{stem}_annotated.jpg"),
         )
 
         # Step 7: Log
-        log(str(img_path), validation, result_2a, result_2b, inpaint_ok_2a, inpaint_ok_2b)
+        log(str(img_path), validation, result, inpaint_ok)
 
     print(f"\n{'='*60}")
     print(f"[Done] Results   → {cfg.RESULTS_CSV}")

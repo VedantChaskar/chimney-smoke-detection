@@ -1,10 +1,9 @@
 # src/annotator.py
 """
-3-panel annotated output image.
+2-panel annotated output image.
 
-Panel 1 (left)   — Original with SAM3 smoke overlay
-Panel 2 (centre) — Inpainted result 2a (pixel mask) with opacity result
-Panel 3 (right)  — Inpainted result 2b (bbox mask) with opacity result
+Panel 1 (left)  — Original with SAM3 smoke overlay
+Panel 2 (right) — Inpainted result (pixel mask) with opacity result
 """
 
 from __future__ import annotations
@@ -18,22 +17,18 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import config as cfg
-from .mask_generator import get_bbox_coords
 
 
 def save_annotated(
     original_bgr: np.ndarray,
     inpainted_pixel,          # np.ndarray or None
-    inpainted_bbox,           # np.ndarray or None
     smoke_mask_dict: dict,
-    result_2a: dict,
-    result_2b: dict,
+    result: dict,
     pixel_mask: np.ndarray,
-    bbox_mask: np.ndarray,
     output_path: str,
 ) -> None:
     H, W = original_bgr.shape[:2]
-    canvas = np.zeros((H, W * 3, 3), dtype=np.uint8)
+    canvas = np.zeros((H, W * 2, 3), dtype=np.uint8)
 
     # ── Panel 1: original + smoke overlay ─────────────────────────────────────
     p1  = original_bgr.copy()
@@ -47,7 +42,7 @@ def save_annotated(
     _banner(p1, "Original + Smoke Region", None, None)
     canvas[:H, :W] = p1
 
-    # ── Panel 2: 2a (pixel mask) ──────────────────────────────────────────────
+    # ── Panel 2: pixel mask inpainted result ──────────────────────────────────
     if inpainted_pixel is not None:
         p2 = inpainted_pixel.copy()
         mc, _ = cv2.findContours(pixel_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -56,24 +51,11 @@ def save_annotated(
         p2 = np.zeros_like(original_bgr)
         cv2.putText(p2, "Inpainting failed", (20, H // 2),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 220), 2)
-    _banner(p2, "2a: Pixel Mask (SAM3)", result_2a["opacity_pct"], result_2a["ringelman"])
-    canvas[:H, W:W * 2] = p2
+    _banner(p2, "Pixel Mask (SAM3)", result["opacity_pct"], result["ringelman"])
+    canvas[:H, W:] = p2
 
-    # ── Panel 3: 2b (bbox mask) ───────────────────────────────────────────────
-    if inpainted_bbox is not None:
-        p3 = inpainted_bbox.copy()
-        x1, y1, x2, y2 = get_bbox_coords(smoke_mask_dict, original_bgr.shape)
-        cv2.rectangle(p3, (x1, y1), (x2, y2), (255, 100, 0), cfg.ANNOTATION_THICKNESS)
-    else:
-        p3 = np.zeros_like(original_bgr)
-        cv2.putText(p3, "Inpainting failed", (20, H // 2),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 220), 2)
-    _banner(p3, "2b: Bounding Box Mask", result_2b["opacity_pct"], result_2b["ringelman"])
-    canvas[:H, W * 2:] = p3
-
-    # Vertical dividers
-    canvas[:, W - 1 : W + 1]         = (60, 60, 60)
-    canvas[:, W * 2 - 1 : W * 2 + 1] = (60, 60, 60)
+    # Vertical divider
+    canvas[:, W - 1 : W + 1] = (60, 60, 60)
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     cv2.imwrite(output_path, canvas)

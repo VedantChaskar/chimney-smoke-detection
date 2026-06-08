@@ -274,7 +274,6 @@ def _inpaint_with_generate_content(
 def inpaint_smoke(
     image_bgr: np.ndarray,
     mask: np.ndarray,
-    mask_type_label: str = "pixel",
     use_local_fallback: bool = False,
 ) -> "np.ndarray | None":
     """
@@ -284,15 +283,14 @@ def inpaint_smoke(
       3. OpenCV INPAINT_NS      (offline fallback, or when use_local_fallback=True)
 
     Args:
-        image_bgr       : original smoke image (H, W, 3)
-        mask            : uint8 binary mask — 255=smoke region, 0=keep
-        mask_type_label : "pixel" or "bbox" (for logging only)
+        image_bgr          : original smoke image (H, W, 3)
+        mask               : uint8 binary mask — 255=smoke region, 0=keep
         use_local_fallback : skip all API calls and use OpenCV directly
 
     Returns:
         Inpainted image (H, W, 3) BGR at original resolution, or None on failure.
     """
-    tag = f"[Inpainter-{mask_type_label}]"
+    tag = "[Inpainter]"
 
     if use_local_fallback:
         print(f"{tag} Using local OpenCV fallback (API skipped)")

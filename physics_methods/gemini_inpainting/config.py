@@ -42,10 +42,8 @@ SMOKE_MIN_CONFIDENCE  = 0.15
 SMOKE_MIN_AREA_RATIO  = 0.015
 
 # ── Mask Generation ────────────────────────────────────────────────────────────
-# Pixel mask (2a): dilation to cover smoke fringe pixels SAM3 may have missed
+# Dilation to cover smoke fringe pixels SAM3 may have missed
 PIXEL_MASK_DILATION_PX = 8
-# Bounding box mask (2b): expand bbox by this fraction on each side
-BBOX_MASK_EXPAND_RATIO = 0.05
 
 # ── Gemini API ─────────────────────────────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")

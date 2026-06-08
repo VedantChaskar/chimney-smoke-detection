@@ -15,7 +15,7 @@ import cv2
 
 from src.opacity        import _to_ringelman, compute_opacity
 from src.smoke_validator import validate_smoke
-from src.mask_generator  import generate_pixel_mask, generate_bbox_mask, get_bbox_coords
+from src.mask_generator  import generate_pixel_mask
 
 
 # ── Ringelman mapping ─────────────────────────────────────────────────────────
@@ -187,32 +187,3 @@ def test_pixel_mask_covers_segmentation():
     assert np.all(mask[seg] == 255)
 
 
-def test_bbox_mask_shape():
-    m    = _make_seg()
-    mask = generate_bbox_mask(m, (100, 100, 3))
-    assert mask.shape == (100, 100)
-    assert mask.dtype == np.uint8
-
-
-def test_bbox_mask_covers_segmentation():
-    m    = _make_seg()
-    mask = generate_bbox_mask(m, (100, 100, 3))
-    seg  = m["segmentation"]
-    # bbox mask must cover all seg pixels
-    assert np.all(mask[seg] == 255)
-
-
-def test_bbox_mask_is_rectangular():
-    m    = _make_seg()
-    mask = generate_bbox_mask(m, (100, 100, 3))
-    ys, xs = np.where(mask > 0)
-    # Filled region should be a rectangle
-    assert ys.min() <= 20 and ys.max() >= 59
-    assert xs.min() <= 30 and xs.max() >= 69
-
-
-def test_get_bbox_coords_within_image():
-    m       = _make_seg(H=200, W=300)
-    x1, y1, x2, y2 = get_bbox_coords(m, (200, 300, 3))
-    assert 0 <= x1 < x2 <= 300
-    assert 0 <= y1 < y2 <= 200
