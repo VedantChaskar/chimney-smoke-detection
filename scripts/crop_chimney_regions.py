@@ -18,7 +18,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from ultralytics import YOLO
-from src.config import CHIMNEY_MODEL_YOLOV8, IMAGE_EXTENSIONS
+from src.config import CHIMNEY_MODEL_YOLOV8, IMAGE_EXTENSIONS, InferencePipelineConfig
 
 
 def extract_chimneys(
@@ -92,14 +92,27 @@ def extract_chimneys(
             x1, y1, x2, y2 = map(int, boxes[best_idx].xyxy[0])
             conf = boxes.conf[best_idx].item()
 
-            # Load and crop image
+            # Load and crop image with asymmetric proportional padding
             img = cv2.imread(str(img_path))
             if img is None:
                 print(f"  ✗ Failed to read image")
                 skipped += 1
                 continue
 
-            chimney_crop = img[y1:y2, x1:x2]
+            img_h, img_w = img.shape[:2]
+            box_h = y2 - y1
+            box_w = x2 - x1
+
+            pad_top = int(box_h * InferencePipelineConfig.CROP_PAD_TOP_SCALE)
+            pad_bottom = int(box_h * InferencePipelineConfig.CROP_PAD_BOTTOM_SCALE)
+            pad_sides = int(box_w * InferencePipelineConfig.CROP_PAD_SIDE_SCALE)
+
+            crop_y1 = max(0, y1 - pad_top)
+            crop_y2 = min(img_h, y2 + pad_bottom)
+            crop_x1 = max(0, x1 - pad_sides)
+            crop_x2 = min(img_w, x2 + pad_sides)
+
+            chimney_crop = img[crop_y1:crop_y2, crop_x1:crop_x2]
 
             # Save crop
             output_path = output_dir / f'crop_{img_path.name}'

@@ -1,0 +1,2 @@
+filename,smoke_present,smoke_type,coverage_ratio,method_2a_opacity,method_2a_ringelman,method_2a_formula,method_2b_opacity,method_2b_ringelman,method_2b_formula,method_2a_inpaint_ok,method_2b_inpaint_ok,reason
+bing_brick_chimney_smoke_00001565.jpg,True,light,0.4241,24.72,2,formula_1_absorbing_smoke,0.0,0,formula_1_absorbing_smoke,True,True,OK

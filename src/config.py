@@ -1,5 +1,5 @@
 """
-Centralized Configuration for Smoke Detection Capstone Project
+Centralized Configuration for Chimney Smoke Detection
 
 This module contains all paths, constants, and configuration settings
 used throughout the project. This eliminates hard-coded paths and makes
@@ -28,6 +28,10 @@ CHIMNEY_DATASET_V6 = CHIMNEY_DETECTION_DIR / "v6_yolo12"
 # Smoke Classification Datasets
 SMOKE_CLASSIFICATION_DIR = DATA_DIR / "smoke_classification"
 SMOKE_DATASET_V1 = SMOKE_CLASSIFICATION_DIR / "v1"
+
+# Ringlemann Classification Datasets
+RINGLEMANN_DATASET_DIR = DATA_DIR / "ringlemann_classification"
+RINGLEMANN_DATASET_V1 = DATA_DIR / "Ringlemann Test.v1i.folder"
 
 # Raw and Processed Data
 RAW_DATA_DIR = DATA_DIR / "raw"
@@ -63,6 +67,17 @@ SAM3_CHECKPOINT = None  # None means download from HuggingFace
 SMOKE_MODELS_DIR = MODELS_DIR / "smoke_classification"
 SMOKE_MODEL_MOBILENET = SMOKE_MODELS_DIR / "mobilenet_best.pt"
 SMOKE_MODEL_CNN = SMOKE_MODELS_DIR / "cnn_best.pt"
+
+# Trained Ringlemann Classification Models
+RINGLEMANN_MODELS_DIR = MODELS_DIR / "ringlemann_classification"
+RINGLEMANN_MODEL_MOBILENET = RINGLEMANN_MODELS_DIR / "mobilenet_best.pt"
+RINGLEMANN_MODEL_RESNET18 = RINGLEMANN_MODELS_DIR / "resnet18_best.pt"
+RINGLEMANN_MODEL_CNN = RINGLEMANN_MODELS_DIR / "custom_cnn_best.pt"
+
+# Binary smoke/no-smoke models trained on Ringlemann dataset
+RINGLEMANN_BINARY_MODELS_DIR = MODELS_DIR / "ringlemann_binary"
+RINGLEMANN_BINARY_MODEL_MOBILENET = RINGLEMANN_BINARY_MODELS_DIR / "mobilenet_best.pt"
+RINGLEMANN_BINARY_MODEL_RESNET18 = RINGLEMANN_BINARY_MODELS_DIR / "resnet18_best.pt"
 
 
 # ============================================================================
@@ -124,6 +139,7 @@ CHIMNEY_YOLOV8_EXPERIMENTS = EXPERIMENTS_DIR / "chimney_detection_yolov8"
 CHIMNEY_YOLOV12_EXPERIMENTS = EXPERIMENTS_DIR / "chimney_detection_yolov12"
 CHIMNEY_YOLO26_EXPERIMENTS = EXPERIMENTS_DIR / "chimney_detection_yolo26"
 SMOKE_EXPERIMENTS = EXPERIMENTS_DIR / "smoke_classification"
+RINGLEMANN_EXPERIMENTS = EXPERIMENTS_DIR / "ringlemann_classification"
 
 # ============================================================================
 # TRAINING CONFIGURATIONS
@@ -166,6 +182,34 @@ class SmokeClassificationConfig:
     EXPERIMENT_DIR = SMOKE_EXPERIMENTS
 
 
+class RinglemannClassificationConfig:
+    """Configuration for Ringlemann scale classification (0-5)"""
+    EPOCHS = 50
+    IMG_SIZE = 224
+    BATCH_SIZE = 32
+    LEARNING_RATE = 0.001
+    WEIGHT_DECAY = 1e-4
+    PATIENCE = 10  # Early stopping patience
+    NUM_CLASSES = 6  # R0, R1, R2, R3, R4, R5
+
+    # Ringlemann class names
+    CLASS_NAMES = ['R0', 'R1', 'R2', 'R3', 'R4', 'R5']
+
+    # Dataset paths
+    DEFAULT_DATASET = RINGLEMANN_DATASET_V1
+    TRAIN_DIR = DEFAULT_DATASET / "train"
+    VALID_DIR = DEFAULT_DATASET / "valid"
+    TEST_DIR = DEFAULT_DATASET / "test"
+
+    # Model paths
+    MODEL_SAVE_DIR = RINGLEMANN_MODELS_DIR
+    EXPERIMENT_DIR = RINGLEMANN_EXPERIMENTS
+
+    # Evaluation thresholds
+    GOOD_MAE_THRESHOLD = 0.5  # MAE < 0.5 is good performance
+    ACCEPTABLE_MAE_THRESHOLD = 1.0  # MAE < 1.0 is acceptable
+
+
 class SAM3DetectionConfig:
     """Configuration for SAM3 chimney detection (inference)"""
     IMG_SIZE = 1008  # SAM3 uses 1008x1008 resolution
@@ -178,7 +222,7 @@ class SAM3DetectionConfig:
 
 
 class InferencePipelineConfig:
-    """Configuration for the two-stage inference pipeline"""
+    """Configuration for the three-stage inference pipeline (chimney → smoke → Ringlemann)"""
     # Stage 1: Chimney Detection
     CHIMNEY_MODEL = CHIMNEY_MODEL_YOLOV8  # or CHIMNEY_MODEL_YOLOV12
     CHIMNEY_CONF_THRESHOLD = 0.15
@@ -188,6 +232,12 @@ class InferencePipelineConfig:
     SMOKE_MODEL = SMOKE_MODEL_MOBILENET  # or SMOKE_MODEL_CNN
     SMOKE_CONF_THRESHOLD = 0.5
     SMOKE_IMG_SIZE = 224
+
+    # Chimney crop padding scales (proportional to bounding box size)
+    # Smoke rises upward, so top padding is the most important
+    CROP_PAD_TOP_SCALE = 1.5      # pad_top = box_height * 1.5
+    CROP_PAD_BOTTOM_SCALE = 0.2   # pad_bottom = box_height * 0.2
+    CROP_PAD_SIDE_SCALE = 0.3     # pad_sides = box_width * 0.3
 
     # Output settings
     SAVE_ANNOTATED = True
@@ -265,6 +315,7 @@ def get_latest_experiment(experiment_dir):
 # Class names for datasets
 CHIMNEY_CLASSES = ['chimney']
 SMOKE_CLASSES = ['no_smoke', 'smoke']
+RINGLEMANN_CLASSES = ['R0', 'R1', 'R2', 'R3', 'R4', 'R5']
 
 # Image extensions
 IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']
